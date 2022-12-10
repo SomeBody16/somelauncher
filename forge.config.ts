@@ -8,11 +8,17 @@ import type { ForgeConfig } from '@electron-forge/shared-types'
 import { mainConfig } from './webpack.main.config'
 import { rendererConfig } from './webpack.renderer.config'
 
+const iconPath = './images/icon.png'
+
 const config: ForgeConfig = {
-    packagerConfig: {},
+    packagerConfig: {
+        icon: iconPath,
+    },
     rebuildConfig: {},
     makers: [
-        new MakerSquirrel({}),
+        new MakerSquirrel({
+            setupIcon: iconPath,
+        }),
         new MakerZIP({}, ['darwin']),
         new MakerRpm({}),
         new MakerDeb({}),

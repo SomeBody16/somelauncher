@@ -9,6 +9,4 @@ export const launch = async () => {
         detached: true,
     })
     child.unref()
-
-    console.log('DONE')
 }

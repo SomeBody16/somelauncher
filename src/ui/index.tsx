@@ -74,6 +74,8 @@ export default function UI() {
             await runTask(<>Launching minecraft...</>, 100, async () => {
                 await api.minecraft.launch()
             })
+
+            window.electron.exit()
         })()
     }, [])
     return (

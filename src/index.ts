@@ -1,6 +1,11 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import './store'
 
+import updateApp from 'update-electron-app'
+updateApp({
+    repo: 'SomeBody16/somelauncher',
+})
+
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 

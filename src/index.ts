@@ -31,6 +31,7 @@ const createWindow = (): void => {
 
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
 
+    console.log({ env: process.env.NODE_ENV })
     process.env.NODE_ENV === 'development' && mainWindow.webContents.openDevTools()
 
     ipcMain.on('exit', () => mainWindow?.close())

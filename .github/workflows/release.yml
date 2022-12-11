@@ -14,13 +14,19 @@ jobs:
         os: [windows-latest]
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@master
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node 16
+        uses: actions/setup-node@v3
         with:
-          node-version: 14
-      - name: install dependencies
-        run: npm install
-      - name: publish
+          node-version: 16.x
+      - name: Install dependencies
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install --frozen-lockfile
+      - name: Build and Publish
+        uses: borales/actions-yarn@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run publish
+        with:
+          cmd: run publish

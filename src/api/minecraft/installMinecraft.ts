@@ -6,7 +6,7 @@ export const installMinecraft = async (mcVersion: string, destination: string) =
     const versionDir = join(destination, 'versions', mcVersion)
     if (existsSync(versionDir)) {
         console.log('Minecraft', mcVersion, 'installed, skipping...')
-        return
+        // return
     }
 
     const { versions } = await getVersionList()

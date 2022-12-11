@@ -22,7 +22,14 @@ export default function UI() {
 
             await runTask(<>Initializing...</>, 10, async () => {
                 api.removeOldVersion()
-                await git.init()
+                await git.init().catch(async (error) => {
+                    console.error(error)
+                    console.error('GIT not installed')
+
+                    await api.downloadGit()
+                    alert('You need to restart the launcher')
+                    window.electron.exit()
+                })
             })
 
             await runTask(<>Connecting to remote...</>, 20, async () => {
@@ -34,7 +41,7 @@ export default function UI() {
 
             await runTask(<>Updating client...</>, 50, async () => {
                 await git.fetch()
-                await git.pull('origin', 'master')
+                await git.reset(['--hard', 'origin/master'])
             })
 
             const launcherDir = api.getLauncherDir()
@@ -47,7 +54,6 @@ export default function UI() {
                 70,
                 async () => {
                     await api.minecraft.installMinecraft(version.minecraft, launcherDir)
-                    await api.minecraft.ensureDependenciesInstalled(version.minecraft, launcherDir)
                 },
             )
 
@@ -58,7 +64,6 @@ export default function UI() {
                 90,
                 async () => {
                     await api.minecraft.installForge(version.minecraft, version.forge, launcherDir)
-                    await api.minecraft.ensureDependenciesInstalled(version.minecraft, launcherDir)
                 },
             )
 

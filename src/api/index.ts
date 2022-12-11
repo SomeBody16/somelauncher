@@ -1,3 +1,4 @@
+export * from './downloadGit'
 export * from './getLauncherDir'
 export * from './getRamForMc'
 export * from './getVersion'

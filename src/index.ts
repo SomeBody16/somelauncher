@@ -15,8 +15,8 @@ if (require('electron-squirrel-startup')) {
 
 const createWindow = (): void => {
     const mainWindow = new BrowserWindow({
-        width: 1280,
-        height: 720,
+        width: 1280 / 2,
+        height: 720 / 2,
         webPreferences: {
             preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
 
@@ -30,7 +30,8 @@ const createWindow = (): void => {
     })
 
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
-    mainWindow.webContents.openDevTools()
+
+    process.env.NODE_ENV === 'development' && mainWindow.webContents.openDevTools()
 
     ipcMain.on('exit', () => mainWindow?.close())
 }

@@ -10,7 +10,7 @@ export const installForge = async (
     const versionDir = join(destination, 'versions', `${mcVersion}-forge-${forgeVersion}`)
     if (existsSync(versionDir)) {
         console.log('Forge', forgeVersion, 'installed, skipping...')
-        // return
+        return
     }
 
     const { versions } = await getForgeVersionList({

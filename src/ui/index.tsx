@@ -72,6 +72,7 @@ export default function UI() {
             })
 
             await runTask(<>Launching minecraft...</>, 100, async () => {
+                await api.minecraft.ensureDependenciesInstalled(version.minecraft, launcherDir)
                 await api.minecraft.launch()
             })
 

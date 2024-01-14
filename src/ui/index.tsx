@@ -41,7 +41,9 @@ export default function UI() {
 
             await runTask(<>Updating client...</>, 50, async () => {
                 await git.fetch()
-                await git.reset(['--hard', 'origin/master'])
+
+                const branch = process.env['BRANCH'] || 'origin/master'
+                await git.reset(['--hard', branch])
             })
 
             const launcherDir = api.getLauncherDir()

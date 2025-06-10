@@ -1,6 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
-import { getDotMinecraftDir } from '../getDotMinecraftDir'
 import { getLauncherDir } from '../getLauncherDir'
 
 const readJson = (filePath: string) => JSON.parse(readFileSync(filePath, 'utf-8'))

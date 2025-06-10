@@ -5,6 +5,7 @@ import { repositoryUrl } from '../config'
 export default function UI() {
     const [taskName, setTaskName] = React.useState(<>'Initializing...'</>)
     const [progress, setProgress] = React.useState(0)
+    const [gitProgress, setGitProgress] = React.useState(100)
 
     const runTask = async (
         name: JSX.Element,
@@ -14,13 +15,23 @@ export default function UI() {
         setTaskName(name)
         await task()
         setProgress(progressOnDone)
+        setGitProgress(100)
     }
 
     React.useEffect(() => {
         ;(async () => {
-            const { git, ...api } = window.api
+            const { getGit, ...api } = window.api
+            const git = getGit({
+                progress: ({ method, stage, progress }) => {
+                    console.log(`git.${method} ${stage} stage ${progress}% complete`)
+                    setGitProgress(progress)
+                },
+            })
 
-            await runTask(<>Initializing...</>, 10, async () => {
+            const branch = api.getBranch()
+            console.log(`Branch: ${branch}`)
+
+            await runTask(<>Initializing...</>, 5, async () => {
                 api.removeOldVersion()
                 await git.init().catch(async (error) => {
                     console.error(error)
@@ -32,18 +43,19 @@ export default function UI() {
                 })
             })
 
-            await runTask(<>Connecting to remote...</>, 20, async () => {
+            await runTask(<>Connecting to remote...</>, 10, async () => {
                 const remotes = await git.getRemotes()
                 if (!remotes.length) {
                     await git.addRemote('origin', repositoryUrl)
                 }
             })
 
-            await runTask(<>Updating client...</>, 50, async () => {
-                await git.fetch()
+            await runTask(<>Downloading...</>, 60, async () => {
+                await git.fetch('origin', branch)
+            })
 
-                const branch = process.env['BRANCH'] || 'origin/master'
-                await git.reset(['--hard', branch])
+            await runTask(<>Installing mods...</>, 65, async () => {
+                await git.reset(['--hard', `origin/${branch}`])
             })
 
             const launcherDir = api.getLauncherDir()
@@ -71,26 +83,36 @@ export default function UI() {
 
             await runTask(<>Preparing for launch...</>, 95, async () => {
                 await api.minecraft.updateProfiles(
-                    'Some Hunters',
+                    'Minecraft THE Server',
                     version.minecraft,
                     version.forge,
                     api.getRamForMc(),
                 )
+                await api.minecraft.ensureDependenciesInstalled(version.minecraft, launcherDir)
             })
 
             await runTask(<>Launching minecraft...</>, 100, async () => {
-                await api.minecraft.ensureDependenciesInstalled(version.minecraft, launcherDir)
                 await api.minecraft.launch()
             })
 
             window.electron.exit()
         })()
     }, [])
+
+    let gitProgressText = ''
+    if (gitProgress < 100) {
+        gitProgressText = ` (${gitProgress}%)`
+    }
+
     return (
         <Center sx={{ height: '100vh' }}>
             <Stack sx={{ width: '50vw' }}>
-                <Text>{taskName}</Text>
+                <Text>
+                    {taskName}
+                    {gitProgressText}
+                </Text>
                 <Progress value={progress} animate />
+                <Progress value={gitProgress} animate />
             </Stack>
         </Center>
     )

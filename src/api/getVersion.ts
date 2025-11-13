@@ -2,7 +2,7 @@ import { readFileSync } from 'original-fs'
 import { join } from 'path'
 import { getLauncherDir } from './getLauncherDir'
 
-type Version = {
+export type Version = {
     name: string
     minecraft: string
     forge: string

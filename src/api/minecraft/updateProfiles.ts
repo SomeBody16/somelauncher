@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { getLauncherDir } from '../getLauncherDir'
 
@@ -15,7 +15,28 @@ export const updateProfiles = async (
     const gameDir = getLauncherDir()
     const profilesFile = path.join(gameDir, 'launcher_profiles.json')
 
-    const launcherProfiles = readJson(profilesFile)
+    let launcherProfiles = {} as any
+    if (existsSync(profilesFile)) {
+        launcherProfiles = readJson(profilesFile)
+    } else {
+        launcherProfiles = {
+            "settings": {
+                "crashAssistance": true,
+                "enableAdvanced": true,
+                "enableAnalytics": false,
+                "enableHistorical": false,
+                "enableReleases": true,
+                "enableSnapshots": false,
+                "keepLauncherOpen": false,
+                "profileSorting": "ByLastPlayed",
+                "showGameLog": false,
+                "showMenu": false,
+                "soundOn": false
+            },
+            "version": 3
+        }
+    }
+
     launcherProfiles.profiles = {
         [name]: {
             gameDir,

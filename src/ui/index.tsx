@@ -1,35 +1,22 @@
-import {
-    Button,
-    Center,
-    Code,
-    Divider,
-    Group,
-    List,
-    Progress,
-    Stack,
-    Text,
-    TextInput,
-    Title,
-} from '@mantine/core'
+import { Button, Center, Code, Group, Progress, Stack, Text, TextInput, Title } from '@mantine/core'
 import React from 'react'
 import { repositoryUrl } from '../config'
+import type { Version } from '../api'
+import { SimpleGit } from 'simple-git/dist/typings'
 
-type Step = 'home' | 'install' | 'launch'
+type Step = 'initialize' | 'home' | 'install' | 'launch'
 
 export default function UI() {
-    const [step, setStep] = React.useState<Step>('home')
+    const [step, setStep] = React.useState<Step>('initialize')
     const [taskName, setTaskName] = React.useState(<>Initializing...</>)
     const [progress, setProgress] = React.useState(0)
     const [gitProgress, setGitProgress] = React.useState(100)
-    const version = React.useMemo(() => window.api.getVersion(), [])
+    const [version, setVersion] = React.useState(undefined as Version)
 
     const [branch, setBranch] = React.useState(window.api.getBranch())
+    React.useEffect(() => window.api.setBranch(branch), [branch])
+
     const [changelog, setChangelog] = React.useState('Loading...')
-    React.useEffect(() => {
-        setChangelog('Loading...')
-        window.api.setBranch(branch)
-        window.api.getChangelog(branch).then(setChangelog)
-    }, [branch])
 
     const runTask = async (
         name: JSX.Element,
@@ -42,6 +29,53 @@ export default function UI() {
         setGitProgress(100)
     }
 
+    const downloadOrUpdate = async (git: SimpleGit) => {
+        await runTask(<>Downloading...</>, 60, async () => {
+            await git.fetch('origin', branch)
+        })
+
+        await runTask(<>Installing mods...</>, 65, async () => {
+            await git.reset(['--hard', `origin/${branch}`])
+        })
+    }
+
+    React.useEffect(() => {
+        ;(async () => {
+            const { getGit, ...api } = window.api
+            const git = getGit({
+                progress: ({ method, stage, progress }) => {
+                    console.log(`git.${method} ${stage} stage ${progress}% complete`)
+                    setGitProgress(progress)
+                },
+            })
+
+            await runTask(<>Initializing...</>, 5, async () => {
+                api.removeOldVersion()
+                await git.init().catch(async (error) => {
+                    console.error(error)
+                    console.error('GIT not installed')
+
+                    await api.downloadGit()
+                    alert('You need to restart the launcher')
+                    window.electron.exit()
+                })
+            })
+
+            await runTask(<>Connecting to remote...</>, 10, async () => {
+                const remotes = await git.getRemotes()
+                if (!remotes.length) {
+                    await git.addRemote('origin', repositoryUrl)
+                }
+            })
+
+            await downloadOrUpdate(git)
+
+            setVersion(api.getVersion())
+            await api.getChangelog('main').then(setChangelog)
+            setStep('home')
+        })()
+    }, [])
+
     const start = async () => {
         setStep('install')
         const { getGit, ...api } = window.api
@@ -51,37 +85,11 @@ export default function UI() {
                 setGitProgress(progress)
             },
         })
-        console.log(`Branch: ${branch}`)
-
-        await runTask(<>Initializing...</>, 5, async () => {
-            api.removeOldVersion()
-            await git.init().catch(async (error) => {
-                console.error(error)
-                console.error('GIT not installed')
-
-                await api.downloadGit()
-                alert('You need to restart the launcher')
-                window.electron.exit()
-            })
-        })
-
-        await runTask(<>Connecting to remote...</>, 10, async () => {
-            const remotes = await git.getRemotes()
-            if (!remotes.length) {
-                await git.addRemote('origin', repositoryUrl)
-            }
-        })
-
-        await runTask(<>Downloading...</>, 60, async () => {
-            await git.fetch('origin', branch)
-        })
-
-        await runTask(<>Installing mods...</>, 65, async () => {
-            await git.reset(['--hard', `origin/${branch}`])
-        })
 
         const launcherDir = api.getLauncherDir()
         const version = api.getVersion()
+
+        await downloadOrUpdate(git)
 
         await runTask(
             <>
@@ -106,7 +114,7 @@ export default function UI() {
         setStep('launch')
         await runTask(<>Preparing for launch...</>, 95, async () => {
             await api.minecraft.updateProfiles(
-                'Minecraft THE Server',
+                version.name,
                 version.minecraft,
                 version.forge,
                 api.getRamForMc(),
@@ -156,7 +164,7 @@ export default function UI() {
                     </Stack>
                 </Group>
             )}
-            {step === 'install' && (
+            {['initialize', 'install'].includes(step) && (
                 <Stack sx={{ width: '50vw' }}>
                     <Text>
                         {taskName}

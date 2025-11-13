@@ -3,6 +3,7 @@ import { join } from 'path'
 import { getLauncherDir } from './getLauncherDir'
 
 type Version = {
+    name: string
     minecraft: string
     forge: string
 }

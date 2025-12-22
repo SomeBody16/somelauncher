@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'original-fs'
 import { SimpleGitOptions, simpleGit } from 'simple-git'
 import { getLauncherDir } from './getLauncherDir'
+import { join } from 'path'
 
 const baseDir = getLauncherDir()
 mkdirSync(baseDir, { recursive: true })
@@ -8,26 +9,20 @@ mkdirSync(baseDir, { recursive: true })
 export const getGit = (options?: Partial<SimpleGitOptions>) => simpleGit({ baseDir, ...options })
 
 /**
- * Should return last git commit full description
+ * Should return CHANGELOG.md content from given branch
  *
  * @param branch - branch name
  */
-export const getChangelog = async (branch: string): Promise<string> => {
-    const git = getGit()
+export const getChangelog = async (): Promise<string> => {
     try {
-        // Fetch latest commits for the branch
-        await git.fetch('origin', branch)
-
-        // Get the log of commits for the given branch, limiting to the most recent 50 for practicality
-        const logResult = await git.log([`origin/${branch}`, '--max-count=1'])
-
-        // Format each commit as "hash - message"
-        return logResult.all[0].message
-    } catch (error: any) {
-        // You may want to add error reporting/logging here
-        return `Failed to get changelog: ${error?.message ?? error}`
+        const launcherDir = getLauncherDir()
+        const changelogFile = join(launcherDir, 'CHANGELOG.md')
+        const str = readFileSync(changelogFile, 'utf-8')
+        return str.replace(/\n/g, '<br/>')
+    } catch (e) {
+        console.error(e)
+        return ''
     }
-
 }
 
 export const getBranch = (): string => {

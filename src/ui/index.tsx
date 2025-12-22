@@ -1,4 +1,4 @@
-import { Button, Center, Code, Group, Progress, Stack, Text, TextInput, Title } from '@mantine/core'
+import { Button, Center, Code, Group, Progress, ScrollArea, Stack, Text, TextInput, Title } from '@mantine/core'
 import React from 'react'
 import { repositoryUrl } from '../config'
 import type { Version } from '../api'
@@ -66,12 +66,12 @@ export default function UI() {
                 if (!remotes.length) {
                     await git.addRemote('origin', repositoryUrl)
                 }
-            })
+            }) 
 
             await downloadOrUpdate(git)
 
             setVersion(api.getVersion())
-            await api.getChangelog('main').then(setChangelog)
+            await api.getChangelog().then(setChangelog)
             setStep('home')
         })()
     }, [])
@@ -140,7 +140,7 @@ export default function UI() {
                 <Group sx={{ width: '100vw' }}>
                     <Stack
                         align='center'
-                        sx={{ width: '40vw', height: '90vh', borderRight: '1px solid gray' }}
+                        sx={{ width: '30vw', height: '90vh', borderRight: '1px solid gray' }}
                     >
                         <Title order={3}>{version.name}</Title>
                         <Group spacing={6}>
@@ -152,15 +152,17 @@ export default function UI() {
                             label='Branch'
                             value={branch}
                             onChange={(event) => setBranch(event.target.value)}
-                            sx={{ width: '35vw', marginTop: 'auto' }}
+                            sx={{ width: '25vw', marginTop: 'auto' }}
                         />
-                        <Button onClick={start} sx={{ width: '35vw' }}>
+                        <Button onClick={start} sx={{ width: '25vw' }}>
                             Start
                         </Button>
                     </Stack>
                     <Stack sx={{ height: '90vh' }}>
-                        <Title order={3}>Changelog</Title>
-                        <Text>{changelog}</Text>
+                        <ScrollArea sx={{ height: '100%', width: '68vw' }}>
+                            <Title order={3}>Changelog</Title>
+                            <Text dangerouslySetInnerHTML={{ __html: changelog }} />
+                        </ScrollArea>
                     </Stack>
                 </Group>
             )}

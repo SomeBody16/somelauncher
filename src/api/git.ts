@@ -2,6 +2,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'original-fs'
 import { SimpleGitOptions, simpleGit } from 'simple-git'
 import { getLauncherDir } from './getLauncherDir'
 import { join } from 'path'
+import remarkHtml from 'remark-html'
+import remarkParse from 'remark-parse'
+import {read} from 'to-vfile'
+import {unified} from 'unified'
 
 const baseDir = getLauncherDir()
 mkdirSync(baseDir, { recursive: true })
@@ -17,8 +21,11 @@ export const getChangelog = async (): Promise<string> => {
     try {
         const launcherDir = getLauncherDir()
         const changelogFile = join(launcherDir, 'CHANGELOG.md')
-        const str = readFileSync(changelogFile, 'utf-8')
-        return str.replace(/\n/g, '<br/>')
+        return unified()
+            .use(remarkParse)
+            .use(remarkHtml)
+            .process(await read(changelogFile))
+            .then((result) => String(result))
     } catch (e) {
         console.error(e)
         return ''

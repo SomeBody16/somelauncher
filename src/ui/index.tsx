@@ -1,8 +1,9 @@
-import { Button, Center, Code, Group, Progress, ScrollArea, Stack, Text, TextInput, Title } from '@mantine/core'
+import { ActionIcon, Button, Center, Code, Group, Progress, ScrollArea, Stack, Text, TextInput, Title } from '@mantine/core'
 import React from 'react'
 import { repositoryUrl } from '../config'
-import type { Version } from '../api'
+import { type Version } from '../api'
 import { SimpleGit } from 'simple-git/dist/typings'
+import { IconCheck, IconX } from '@tabler/icons'
 
 type Step = 'initialize' | 'home' | 'install' | 'launch'
 
@@ -14,7 +15,7 @@ export default function UI() {
     const [version, setVersion] = React.useState(undefined as Version)
 
     const [branch, setBranch] = React.useState(window.api.getBranch())
-    React.useEffect(() => window.api.setBranch(branch), [branch])
+    const branchIsDifferent = branch !== window.api.getBranch()
 
     const [changelog, setChangelog] = React.useState('Loading...')
 
@@ -39,41 +40,44 @@ export default function UI() {
         })
     }
 
+    const initialize = async () => {
+        setStep('initialize')
+        const { getGit, ...api } = window.api
+        const git = getGit({
+            progress: ({ method, stage, progress }) => {
+                console.log(`git.${method} ${stage} stage ${progress}% complete`)
+                setGitProgress(progress)
+            },
+        })
+
+        await runTask(<>Initializing...</>, 5, async () => {
+            api.removeOldVersion()
+            await git.init().catch(async (error) => {
+                console.error(error)
+                console.error('GIT not installed')
+
+                await api.downloadGit()
+                alert('You need to restart the launcher')
+                window.electron.exit()
+            })
+        })
+
+        await runTask(<>Connecting to remote...</>, 10, async () => {
+            const remotes = await git.getRemotes()
+            if (!remotes.length) {
+                await git.addRemote('origin', repositoryUrl)
+            }
+        })
+
+        await downloadOrUpdate(git)
+
+        setVersion(api.getVersion())
+        await api.getChangelog().then(setChangelog)
+        setStep('home')
+    }
+
     React.useEffect(() => {
-        ;(async () => {
-            const { getGit, ...api } = window.api
-            const git = getGit({
-                progress: ({ method, stage, progress }) => {
-                    console.log(`git.${method} ${stage} stage ${progress}% complete`)
-                    setGitProgress(progress)
-                },
-            })
-
-            await runTask(<>Initializing...</>, 5, async () => {
-                api.removeOldVersion()
-                await git.init().catch(async (error) => {
-                    console.error(error)
-                    console.error('GIT not installed')
-
-                    await api.downloadGit()
-                    alert('You need to restart the launcher')
-                    window.electron.exit()
-                })
-            })
-
-            await runTask(<>Connecting to remote...</>, 10, async () => {
-                const remotes = await git.getRemotes()
-                if (!remotes.length) {
-                    await git.addRemote('origin', repositoryUrl)
-                }
-            }) 
-
-            await downloadOrUpdate(git)
-
-            setVersion(api.getVersion())
-            await api.getChangelog().then(setChangelog)
-            setStep('home')
-        })()
+        initialize()
     }, [])
 
     const start = async () => {
@@ -153,14 +157,32 @@ export default function UI() {
                             value={branch}
                             onChange={(event) => setBranch(event.target.value)}
                             sx={{ width: '25vw', marginTop: 'auto' }}
+                            rightSection={
+                                branchIsDifferent ? (
+                                    <ActionIcon
+                                        color='blue'
+                                        onClick={() => {
+                                            window.api.setBranch(branch)
+                                            initialize()
+                                        }}
+                                    >
+                                        <IconCheck />
+                                    </ActionIcon>
+                                ) : undefined
+                            }
                         />
                         <Button onClick={start} sx={{ width: '25vw' }}>
                             Start
                         </Button>
                     </Stack>
                     <Stack sx={{ height: '90vh' }}>
-                        <ScrollArea sx={{ height: '100%', width: '68vw' }}>
+                        <Group position='apart'>
                             <Title order={3}>Changelog</Title>
+                            <ActionIcon onClick={() => window.electron.exit()}>
+                                <IconX />
+                            </ActionIcon>
+                        </Group>
+                        <ScrollArea sx={{ height: '90%', width: '68vw' }}>
                             <Text dangerouslySetInnerHTML={{ __html: changelog }} />
                         </ScrollArea>
                     </Stack>

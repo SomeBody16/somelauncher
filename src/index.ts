@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import './store'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -21,6 +21,11 @@ const createWindow = (): void => {
         backgroundColor: '#141517',
         frame: false,
         resizable: false,
+    })
+
+    mainWindow.webContents.setWindowOpenHandler(({url}) => {
+        shell.openExternal(url)
+        return { action: 'deny' }
     })
 
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
